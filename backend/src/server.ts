@@ -10,6 +10,8 @@ import logger from './utils/logger';
 import authRoutes from './routes/auth.routes';
 import tenantRoutes from './routes/tenant.routes';
 import userRoutes from './routes/user.routes';
+import categoryRoutes from './routes/category.routes';
+import skuRoutes from './routes/sku.routes';
 
 dotenv.config();
 
@@ -17,7 +19,6 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet());
-
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3001',
   credentials: true,
@@ -25,7 +26,6 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 app.use(compression());
 
 const limiter = rateLimit({
@@ -59,6 +59,8 @@ app.get('/health', (req: Request, res: Response) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin/tenants', tenantRoutes);
 app.use('/api/v1/admin/users', userRoutes);
+app.use('/api/v1/categories', categoryRoutes);
+app.use('/api/v1/skus', skuRoutes);
 
 app.use((req: Request, res: Response) => {
   const method = req.method;

@@ -18,6 +18,11 @@ export const query = async (text: string, params?: any[]) => {
   return result;
 };
 
+export const getClient = async () => {
+  const client = await pool.connect();
+  return client;
+};
+
 export const closePool = async () => {
   await pool.end();
 };
