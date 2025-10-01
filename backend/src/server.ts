@@ -12,6 +12,7 @@ import tenantRoutes from './routes/tenant.routes';
 import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import skuRoutes from './routes/sku.routes';
+import vendorRoutes from './routes/vendor.routes';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/v1/admin/tenants', tenantRoutes);
 app.use('/api/v1/admin/users', userRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/skus', skuRoutes);
+app.use('/api/v1/vendors', vendorRoutes);
 
 app.use((req: Request, res: Response) => {
   const method = req.method;
