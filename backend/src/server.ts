@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import skuRoutes from './routes/sku.routes';
 import vendorRoutes from './routes/vendor.routes';
+import documentRoutes from './routes/document.routes';
 
 dotenv.config();
 
@@ -63,6 +64,7 @@ app.use('/api/v1/admin/users', userRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/skus', skuRoutes);
 app.use('/api/v1/vendors', vendorRoutes);
+app.use('/api/v1/documents', documentRoutes);
 
 app.use((req: Request, res: Response) => {
   const method = req.method;
