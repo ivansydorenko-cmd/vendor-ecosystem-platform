@@ -85,13 +85,10 @@ export const createWorkOrder = async (req: Request, res: Response) => {
     );
 
     const lineItemId = generateUuid();
-
-await client.query(
+    await client.query(
       'INSERT INTO work_order_line_items (id, work_order_id, sku_id, quantity, unit_price, total_price, is_addon, status) VALUES ($1, $2, $3, 1, $4, $4, false, \'approved\')',
       [lineItemId, workOrderId, sku_id, sku.current_price]
     );
-
-await client.query('COMMIT');
 
     // AUTO-NOTIFY VENDORS BASED ON SELECTION METHOD
     if (vendor_selection_method === 'auto_notify' || !vendor_selection_method) {
@@ -103,7 +100,7 @@ await client.query('COMMIT');
           tenant_id
         );
 
-const vendorIds = qualifiedVendors.map((v: any) => v.vendor_id);
+        const vendorIds = qualifiedVendors.map(v => v.vendor_id);
         
         if (vendorIds.length > 0) {
           await workOrderService.notifyVendors(
@@ -124,6 +121,7 @@ const vendorIds = qualifiedVendors.map((v: any) => v.vendor_id);
       }
     }
 
+    await client.query('COMMIT');
 
     logger.info('Work order created:', { workOrderId, title });
 
@@ -148,7 +146,7 @@ const vendorIds = qualifiedVendors.map((v: any) => v.vendor_id);
 
 export const getAvailableWorkOrders = async (req: Request, res: Response) => {
   try {
-    const { vendor_id } = req.query;
+    const { vendor_id, page = 1, limit = 20 } = req.query;
 
     if (!vendor_id) {
       return res.status(422).json({
@@ -159,29 +157,13 @@ export const getAvailableWorkOrders = async (req: Request, res: Response) => {
       });
     }
 
-    const vendorZips = await query(
-      'SELECT zipcode FROM vendor_service_areas_zipcodes WHERE vendor_id = $1',
-      [vendor_id]
+    const result = await workOrderService.getAvailableWorkOrdersForVendor(
+      vendor_id as string,
+      Number(page),
+      Number(limit)
     );
 
-    const zipcodes = vendorZips.rows.map(r => r.zipcode);
-
-    if (zipcodes.length === 0) {
-      return res.status(200).json({
-        work_orders: [],
-        total: 0,
-      });
-    }
-
-    const result = await query(
-      'SELECT wo.id, wo.title, wo.description, wo.priority, wo.zipcode, wo.preferred_date, wo.preferred_time_start, wo.preferred_time_end, wo.status, wo.created_at, s.sku_code, s.name as sku_name, s.current_price FROM work_orders wo JOIN skus s ON wo.sku_id = s.id WHERE wo.status = \'created\' AND wo.zipcode = ANY($1) ORDER BY wo.created_at DESC',
-      [zipcodes]
-    );
-
-    res.status(200).json({
-      work_orders: result.rows,
-      total: result.rows.length,
-    });
+    res.status(200).json(result);
   } catch (error) {
     logger.error('Get available work orders error:', error);
     res.status(500).json({
@@ -228,12 +210,12 @@ export const acceptWorkOrder = async (req: Request, res: Response) => {
 
     const workOrder = woResult.rows[0];
 
-    if (workOrder.status !== 'created') {
+    if (workOrder.assigned_vendor_id) {
       await client.query('ROLLBACK');
       return res.status(409).json({
         error: {
           code: 'WORK_ORDER_ALREADY_ASSIGNED',
-          message: 'This work order has already been assigned',
+          message: 'This work order has already been assigned to another vendor',
           current_status: workOrder.status,
         },
       });
@@ -244,16 +226,16 @@ export const acceptWorkOrder = async (req: Request, res: Response) => {
       [vendor_id, id]
     );
 
-    const responseId = generateUuid();
+    await client.query(
+      'UPDATE work_order_vendor_responses SET response = \'accepted\', notes = $1, response_at = CURRENT_TIMESTAMP WHERE work_order_id = $2 AND vendor_id = $3',
+      [notes || null, id, vendor_id]
+    );
 
-await client.query(
-  'UPDATE work_order_vendor_responses SET response = \'accepted\', notes = $1, response_at = CURRENT_TIMESTAMP WHERE work_order_id = $2 AND vendor_id = $3',
-  [notes || null, id, vendor_id]
-);
-await client.query(
-  'UPDATE work_order_vendor_responses SET response = \'declined_auto\', response_at = CURRENT_TIMESTAMP WHERE work_order_id = $1 AND vendor_id != $2 AND response = \'notified\'',
-  [id, vendor_id]
-);
+    await client.query(
+      'UPDATE work_order_vendor_responses SET response = \'declined_auto\', response_at = CURRENT_TIMESTAMP WHERE work_order_id = $1 AND vendor_id != $2 AND response = \'notified\'',
+      [id, vendor_id]
+    );
+
     await client.query('COMMIT');
 
     logger.info('Work order accepted:', { workOrderId: id, vendorId: vendor_id });
