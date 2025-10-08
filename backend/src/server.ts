@@ -17,6 +17,7 @@ import vendorRoutes from './routes/vendor.routes';
 import documentRoutes from './routes/document.routes';
 import workOrderRoutes from './routes/workorder.routes';
 import qualificationRoutes from './routes/qualification.routes';
+import reminderRoutes from './routes/reminder.routes';
 
 dotenv.config();
 
@@ -71,7 +72,7 @@ app.use('/api/v1/vendors', vendorRoutes);
 app.use('/api/v1/documents', documentRoutes);
 app.use('/api/v1/work-orders', workOrderRoutes);
 app.use('/api/v1/qualifications', qualificationRoutes);
-
+app.use('/api/v1/reminders', reminderRoutes);
 app.use((req: Request, res: Response) => {
   const method = req.method;
   const path = req.path;
