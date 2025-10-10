@@ -1,15 +1,17 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
+
+# Install build dependencies for native modules
+RUN apk add --no-cache python3 make g++
 
 COPY package*.json ./
 
-RUN npm install
+# Install dependencies and rebuild native modules
+RUN npm ci && npm rebuild bcrypt --build-from-source
 
 COPY . .
 
 EXPOSE 3000
 
-CMD ["npx", "ts-node", "src/server.ts"]
+CMD ["npm", "run", "dev"]

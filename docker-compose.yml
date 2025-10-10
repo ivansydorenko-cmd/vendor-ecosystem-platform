@@ -34,6 +34,8 @@ services:
       DB_PASS: vendor_pass
       JWT_SECRET: dev-secret-key-change-in-production
       FRONTEND_URL: http://localhost:3001
+      AUTH0_ISSUER_BASE_URL: https://dev-pjlsesauvhcyu7p0.us.auth0.com
+      AUTH0_AUDIENCE: https://vendor-platform-api
     ports:
       - "3000:3000"
     volumes:
