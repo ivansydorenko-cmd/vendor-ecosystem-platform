@@ -1,8 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { auth } from 'express-oauth2-jwt-bearer';
 import { query } from '../config/database';
 import logger from '../utils/logger';
 
+// Auth0 JWT validation
+const jwtCheck = auth({
+  audience: process.env.AUTH0_AUDIENCE || 'https://vendor-platform-api',
+  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL || 'https://your-tenant.auth0.com',
+  tokenSigningAlg: 'RS256'
+});
+
+// Extend Express Request type
 declare global {
   namespace Express {
     interface Request {
@@ -11,14 +19,10 @@ declare global {
         email: string;
         tenantId?: string;
         role?: string;
+        auth0Sub?: string;
       };
     }
   }
-}
-
-interface JwtPayload {
-  userId: string;
-  email: string;
 }
 
 export const authenticateToken = async (
@@ -26,83 +30,87 @@ export const authenticateToken = async (
   res: Response,
   next: NextFunction
 ) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
+  // First validate the JWT with Auth0
+  jwtCheck(req, res, async (err) => {
+    if (err) {
       return res.status(401).json({
         error: {
           code: 'AUTHENTICATION_REQUIRED',
-          message: 'Access token is required',
+          message: 'Invalid or missing access token',
         },
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      logger.error('JWT_SECRET not configured');
+    try {
+// Get user info from Auth0 token
+      const auth0Sub = (req as any).auth?.payload?.sub;
+      const email = (req as any).auth?.payload?.email;
+
+      if (!auth0Sub) {
+        return res.status(401).json({
+          error: {
+            code: 'INVALID_TOKEN',
+            message: 'Token missing required claims',
+          },
+        });
+      }
+
+      // For Machine-to-Machine tokens (no email), bypass user lookup
+      if (!email || auth0Sub.endsWith('@clients')) {
+        req.user = {
+          id: auth0Sub,
+          email: 'system@vendor-platform.com',
+          auth0Sub: auth0Sub,
+        };
+        return next();
+      }
+
+      // Look up user in your database by email
+      let result = await query(
+        'SELECT id, email, status FROM users WHERE email = $1',
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found in system',
+          },
+        });
+      }
+
+      const user = result.rows[0];
+
+      if (user.status !== 'active') {
+        return res.status(403).json({
+          error: {
+            code: 'ACCOUNT_INACTIVE',
+            message: 'User account is not active',
+          },
+        });
+      }
+
+      req.user = {
+        id: user.id,
+        email: user.email,
+        auth0Sub: auth0Sub,
+      };
+
+      next();
+    } catch (error) {
+      logger.error('Authentication error:', error);
       return res.status(500).json({
         error: {
-          code: 'SERVER_CONFIGURATION_ERROR',
-          message: 'Authentication service is misconfigured',
+          code: 'AUTHENTICATION_ERROR',
+          message: 'Error during authentication',
         },
       });
     }
-
-    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
-
-    const result = await query(
-      'SELECT id, email, status FROM users WHERE id = $1',
-      [decoded.userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({
-        error: {
-          code: 'INVALID_TOKEN',
-          message: 'User not found',
-        },
-      });
-    }
-
-    const user = result.rows[0];
-
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        error: {
-          code: 'ACCOUNT_INACTIVE',
-          message: 'User account is not active',
-        },
-      });
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-    };
-
-    next();
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(401).json({
-        error: {
-          code: 'INVALID_TOKEN',
-          message: 'Invalid or expired token',
-        },
-      });
-    }
-
-    logger.error('Authentication error:', error);
-    return res.status(500).json({
-      error: {
-        code: 'AUTHENTICATION_ERROR',
-        message: 'Error during authentication',
-      },
-    });
-  }
+  });
 };
 
+// Keep your existing authorize function - it works perfectly!
 export const authorize = (...allowedRoles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
