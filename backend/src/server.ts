@@ -18,6 +18,7 @@ import documentRoutes from './routes/document.routes';
 import workOrderRoutes from './routes/workorder.routes';
 import qualificationRoutes from './routes/qualification.routes';
 import reminderRoutes from './routes/reminder.routes';
+import addonRoutes from './routes/addon.routes';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/v1/feedback', feedbackRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
+app.use('/api/v1/addons', addonRoutes);
 
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '3600000'),
