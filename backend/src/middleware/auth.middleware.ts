@@ -123,6 +123,16 @@ export const authorize = (...allowedRoles: string[]) => {
         });
       }
 
+      // Allow Machine-to-Machine tokens to bypass role checks (full admin access)
+      // M2M tokens have auth0Sub ending with @clients
+      if (req.user.auth0Sub && req.user.auth0Sub.endsWith('@clients')) {
+        logger.info('M2M token detected, granting admin access');
+        req.user.role = 'admin';
+        req.user.tenantId = '28dd9830-0346-4539-84cd-8a896c0b1648'; // Your admin tenant
+        return next();
+      }
+
+      // For regular user tokens, check database permissions
       const result = await query(
         'SELECT ur.role, ur.tenant_id, t.name as tenant_name FROM user_roles ur LEFT JOIN tenants t ON ur.tenant_id = t.id WHERE ur.user_id = $1 AND ur.status = \'active\'',
         [req.user.id]
