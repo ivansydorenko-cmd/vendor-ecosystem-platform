@@ -10,7 +10,9 @@ export default function DashboardPage() {
         <p className="text-gray-600">
           Welcome! Your role: <span className="font-semibold">{role}</span>
         </p>
-        <p className="mt-4 text-sm text-gray-500">This is a placeholder dashboard. We'll add role-specific content here.</p>
+        <p className="mt-4 text-sm text-gray-500">
+          This is a placeholder dashboard. We'll add role-specific content here.
+        </p>
       </div>
     </div>
   );

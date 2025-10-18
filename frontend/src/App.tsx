@@ -1,9 +1,8 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import api from './lib/api';
 import MainLayout from './components/layout/MainLayout';
 import AuthLayout from './components/layout/AuthLayout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -35,28 +34,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { isLoading, getAccessTokenSilently, isAuthenticated, error } = useAuth0();
-
-  useEffect(() => {
-    console.log('Auth0 State:', { isLoading, isAuthenticated, error });
-  }, [isLoading, isAuthenticated, error]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      api.setTokenGetter(getAccessTokenSilently);
-    }
-  }, [isAuthenticated, getAccessTokenSilently]);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Auth Error</h1>
-          <p className="text-gray-600">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
+  const { isLoading } = useAuth0();
 
   if (isLoading) {
     return (
@@ -80,20 +58,87 @@ function App() {
           </Route>
 
           <Route element={<MainLayout />}>
-            <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsersPage /></ProtectedRoute>} />
-            <Route path="/admin/vendors" element={<ProtectedRoute allowedRoles={['admin']}><AdminVendorsPage /></ProtectedRoute>} />
-            <Route path="/admin/qualifications" element={<ProtectedRoute allowedRoles={['admin']}><AdminQualificationsPage /></ProtectedRoute>} />
-            <Route path="/work-orders" element={<ProtectedRoute allowedRoles={['admin', 'work_requestor']}><WorkOrdersPage /></ProtectedRoute>} />
-            <Route path="/work-orders/create" element={<ProtectedRoute allowedRoles={['admin', 'work_requestor']}><CreateWorkOrderPage /></ProtectedRoute>} />
-            <Route path="/work-orders/:id" element={<ProtectedRoute allowedRoles={['admin', 'work_requestor']}><WorkOrderDetailPage /></ProtectedRoute>} />
-            <Route path="/vendor/available" element={<ProtectedRoute allowedRoles={['vendor']}><AvailableWorkOrdersPage /></ProtectedRoute>} />
-            <Route path="/vendor/my-orders" element={<ProtectedRoute allowedRoles={['vendor']}><VendorWorkOrdersPage /></ProtectedRoute>} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/vendors"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminVendorsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/qualifications"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminQualificationsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/work-orders"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'work_requestor']}>
+                  <WorkOrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/work-orders/create"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'work_requestor']}>
+                  <CreateWorkOrderPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/work-orders/:id"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'work_requestor']}>
+                  <WorkOrderDetailPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/vendor/available"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <AvailableWorkOrdersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/my-orders"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorWorkOrdersPage />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

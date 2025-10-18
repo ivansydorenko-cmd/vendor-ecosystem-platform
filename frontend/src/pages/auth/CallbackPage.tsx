@@ -7,7 +7,9 @@ export default function CallbackPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/');
+    if (isAuthenticated) {
+      navigate('/');
+    }
   }, [isAuthenticated, navigate]);
 
   return (
