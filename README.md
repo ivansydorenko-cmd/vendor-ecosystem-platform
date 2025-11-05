@@ -53,7 +53,7 @@ A comprehensive web-based platform for managing external vendor ecosystems with 
    # Backend dependencies
    cd backend
    npm install
-   
+
    # Frontend dependencies (if applicable)
    cd ../frontend
    npm install
