@@ -52,6 +52,7 @@ export interface SKU {
 export interface WorkOrder {
   id: string;
   tenant_id: string;
+  sku_id: string;
   category_id: string;
   title: string;
   description?: string;
@@ -59,11 +60,51 @@ export interface WorkOrder {
   location_city: string;
   location_state: string;
   location_zipcode: string;
+  location_latitude?: string;
+  location_longitude?: string;
   priority: string;
   status: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  preferred_date: string;
+  preferred_time_start?: string;
+  preferred_time_end?: string;
+  vendor_selection_method?: string;
+  special_instructions?: string;
   assigned_vendor_id?: string;
+  assigned_at?: string;
+  completed_at?: string;
+  completion_notes?: string;
   created_at: string;
   updated_at: string;
+  // Populated fields
+  sku_name?: string;
+  sku_code?: string;
+  sku_price?: number;
+  category_name?: string;
+  vendor_name?: string;
+  vendor_email?: string;
+  vendor_phone?: string;
+  line_items?: WorkOrderLineItem[];
+  total_amount?: number;
+}
+
+export interface WorkOrderLineItem {
+  id: string;
+  work_order_id: string;
+  sku_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  is_addon: boolean;
+  addon_reason?: string;
+  approval_status?: string;
+  created_at: string;
+  // Populated fields
+  sku_name?: string;
+  sku_code?: string;
+  sku_description?: string;
 }
 
 export interface Invoice {
